@@ -1,14 +1,17 @@
+from urllib.request import Request
 from django.shortcuts import render, redirect
 from django.views import View
 
-from todo.models import Task
-from todo.forms import TaskForm
+from todo.models import Task, Note
+from todo.forms import TaskForm, NoteForm
 
 
 class TodoListView(View):
     def get(self, request):
         '''GET the todo list homepage, listing all tasks in reverse order that they were created'''
         tasks = Task.objects.all().order_by('-id')
+        completed_tasks =Task.objects.filter(completed=True).order_by('-id')
+        
         form = TaskForm()
 
         return render(
@@ -46,5 +49,39 @@ class TodoDetailView(View):
         elif 'delete' in request.POST:
             task.delete()
 
+        elif 'completed' in request.POST:
+            task.update(completed=True)
         # "redirect" to the todo homepage
         return redirect('todo_list')
+
+class NoteListView(View):
+    def get(self, request):
+        note_list = Note.objects.all().order_by('id')
+
+        note_form = NoteForm()
+
+        return render(
+            request=request, template_name = "list.html", context ={ 'note_list': note_list}
+        )
+
+def post(self, request):
+    form = NoteForm(request.POST)
+    form.save()
+    return redirect('todo_list')
+
+
+class NoteDetailView(View):
+    def get(self, request, note_id):
+        note = Note.objects.get(id=note_id)
+        note_from = NoteForm(instance=note)
+        return render(
+            request = request, template_name='detail.html', context={'note_form':note_form, 'note_id':note_id}
+            )
+
+    def post(self, request, note_id):
+        note = Note.objects.get(id=note_id)
+
+        if 'save' in request.POST:
+            form = NoteForm(request.POST, instance=note)
+            form.save()
+        return redirect('todo_list')    
